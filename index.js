@@ -4,6 +4,12 @@ const talkerUtils = require('./fs-utils');
 const generateToken = require('./generateToken');
 const validateEmail = require('./validateEmail');
 const validatePassword = require('./validatePassword');
+const validateName = require('./validateName');
+const validateAge = require('./validateAge');
+const validateWatchedAt = require('./validateWatchedAt');
+const validateAuthorization = require('./validateAuthorization');
+const validateTalk = require('./validateTalk');
+const validateRate = require('./validateRate');
 
 const app = express();
 app.use(bodyParser.json());
@@ -44,6 +50,40 @@ app.post('/login',
 
     return res.status(200).json({ token });
 });
+
+app.use(validateAuthorization,
+  validateName,
+  validateAge,
+  validateTalk,
+  validateRate,
+  validateWatchedAt);
+
+app.post('/talker', 
+  async (req, res) => {
+    const { name, age, talk } = req.body;
+    const newTalker = { id: 5, name, age, talk };
+    const talkersList = await talkerUtils.getTalkers();
+  
+    talkersList.push(newTalker);
+
+    await talkerUtils.setTalkers(talkersList);
+
+    return res.status(201).json(newTalker);
+});
+
+app.put('/talker/:id', 
+  async (req, res) => {
+    const { id } = req.params;
+    const { name, age, talk } = req.body;
+    const talkers = await talkerUtils.getTalkers();
+    const talkersIndex = talkers.findIndex((t) => t.id === Number(id));
+
+    talkers[talkersIndex] = { ...talkers[talkersIndex], name, age, talk };
+
+    await talkerUtils.setTalkers(talkers);
+
+    return res.status(200).json(talkers[talkersIndex]);
+  });
 
 app.listen(PORT, () => {  
   console.log('Online');
