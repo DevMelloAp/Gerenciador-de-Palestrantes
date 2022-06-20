@@ -23,23 +23,40 @@ app.get('/', (_request, response) => {
 });
 
 app.get('/talker', async (_req, res) => {
-  const talkers = await talkerUtils.getTalkers();
-  
-  if (talkers) {
-    return res.status(200).json(talkers);
-  } 
-    return res.status(200).send([]);
+    const talkers = await talkerUtils.getTalkers();
+    
+    if (talkers) {
+      return res.status(200).json(talkers);
+    } 
+      return res.status(200).send([]);
 });
 
+app.get('/talker/search', 
+  validateAuthorization,
+  async (req, res) => {
+    const talkers = await talkerUtils.getTalkers();
+    const { q } = req.query;
+    
+    if (q === undefined) (res.status(200).json(talkers)); 
+    
+    const filteredTalkers = talkers.filter((t) => t.name
+    .includes(q));
+    
+    if (filteredTalkers) { 
+      return res.status(200).json(filteredTalkers);
+    }
+    return res.status(200).json([]);
+  });
+
 app.get('/talker/:id', async (req, res) => {
-  const talkers = await talkerUtils.getTalkers();
+    const talkers = await talkerUtils.getTalkers();
 
-  const talker = talkers.find(({ id }) => id === Number(req.params.id));
+    const talker = talkers.find(({ id }) => id === Number(req.params.id));
 
-  if (!talker) {
-    return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
-  }
-  return res.status(200).json(talker);
+    if (!talker) {
+      return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+    }
+    return res.status(200).json(talker);
 });
 
 app.post('/login', 
@@ -50,6 +67,21 @@ app.post('/login',
 
     return res.status(200).json({ token });
 });
+
+app.delete('/talker/:id', 
+  validateAuthorization, 
+  async (req, res) => {
+    const { id } = req.params;
+    const talkers = await talkerUtils.getTalkers();
+      
+    const talkersIndex = talkers.findIndex((t) => t.id === Number(id));
+  
+    talkers.splice(talkersIndex, 1);
+  
+    await talkerUtils.setTalkers(talkers);
+
+    res.status(204).end();
+  });
 
 app.use(validateAuthorization,
   validateName,
